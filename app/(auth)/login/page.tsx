@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -19,7 +19,7 @@ const ROLES = [
   { id: "ADMIN",    label: "Admin",     sub: "Run the cycle" },
 ];
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("invite") ?? "";
@@ -350,7 +350,7 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* Entra ID unavailable dialog */}
+      {/* Microsoft Entra unavailable dialog */}
       {showEntraDialog && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -446,5 +446,13 @@ export default function LoginPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }

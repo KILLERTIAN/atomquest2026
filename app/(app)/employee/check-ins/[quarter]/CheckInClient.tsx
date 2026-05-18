@@ -211,3 +211,4 @@ function GoalCheckInRow({ goal, existing, saving, isLast, quarter, onSave }: {
     </div>
   );
 }
+export default CheckInClient;

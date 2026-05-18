@@ -176,3 +176,4 @@ export function TeamTableClient({ team }: { team: Member[] }) {
     </>
   );
 }
+export default TeamTableClient;

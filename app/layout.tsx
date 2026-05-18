@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Instrument_Serif } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider } from "@/components/session-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const geist = Geist({

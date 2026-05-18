@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { CheckInsOverviewClient } from "./CheckInsOverviewClient";
+import CheckInsOverviewClient from "./CheckInsOverviewClient";
 
 const DEMO_EMAILS = ["emp@demo.com", "manager@demo.com", "admin@demo.com"];
 

@@ -1,159 +1,201 @@
 # AtomQuest 2026 — Goal Setting & Tracking Portal
 
-An enterprise-grade goal management portal built for Atomberg Technologies. Supports Employee, Manager (L1), and Admin roles across a full OKR lifecycle — creation, approval, quarterly check-ins, and reporting.
+Enterprise OKR portal for Atomberg Technologies. Covers the full lifecycle: goal creation → manager approval → quarterly check-ins → analytics → escalation.
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        BROWSER / CLIENT                         │
+│  React 19 · shadcn/ui · TailwindCSS v4 · Recharts · RHF/Zod     │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ HTTPS
+┌──────────────────────────▼──────────────────────────────────────┐
+│                    NEXT.JS 16 APP ROUTER                        │
+│                                                                 │
+│  ┌─────────────────┐  ┌──────────────────┐  ┌───────────────┐   │
+│  │  Server Pages   │  │   API Routes     │  │  proxy.ts     │   │
+│  │ (RSC — no JS    │  │ (mutations only) │  │ (route guard  │   │
+│  │  bundle cost)   │  │ Zod + AuditLog   │  │  by role)     │   │
+│  └────────┬────────┘  └────────┬─────────┘  └───────────────┘   │
+│           │                   │                                 │
+│  ┌────────▼───────────────────▼─────────────────────────────┐   │
+│  │                    lib/  (shared logic)                  │   │
+│  │  auth · db · score · email · teams · escalation · audit  │   │
+│  └────────────────────────┬─────────────────────────────────┘   │
+│                           │ @prisma/adapter-pg                  │
+│  ┌────────────────────────▼─────────────────────────────────┐   │
+│  │              Prisma 7 Client (no binary engine)          │   │
+│  └────────────────────────┬─────────────────────────────────┘   │
+└───────────────────────────┼─────────────────────────────────────┘
+                            │ pg (TLS pool)
+             ┌──────────────▼──────────────┐
+             │   Supabase — PostgreSQL 15  │
+             │   (Transaction Pooler :6543)│
+             └─────────────────────────────┘
+
+External services:
+  Resend ◄── email notifications (approval / return / escalation)
+  MS Teams Webhook ◄── adaptive card notifications
+  Vercel Cron ──► /api/cron/escalation  (daily 08:00 UTC)
+               ──► /api/cron/checkin-reminder (weekly)
+  Microsoft Entra ID ◄──► NextAuth v5 OAuth provider
+```
+
+---
+
+## Role & Route Map
+
+```
+proxy.ts (route guard)
+   │
+   ├── /employee/*   → Role: EMPLOYEE
+   │     ├── /goals            — list / create goal sheet
+   │     ├── /goals/[id]       — edit goals, log actuals
+   │     └── /check-ins        — quarterly status view
+   │
+   ├── /manager/*    → Role: MANAGER | ADMIN
+   │     ├── /approvals        — pending sheets queue
+   │     ├── /team             — team member management
+   │     ├── /check-ins        — add check-in comments
+   │     └── /shared-goals     — push KPIs to team
+   │
+   └── /admin/*      → Role: ADMIN
+         ├── /users            — CRUD + assign manager/dept
+         ├── /cycles           — goal cycle open/close
+         ├── /analytics        — QoQ trends, heatmap
+         ├── /escalations      — configure & view rules
+         ├── /audit            — paginated mutation log
+         └── /reports          — Excel export
+```
 
 ---
 
 ## Tech Stack
 
-| Layer        | Technology                                      |
-|--------------|-------------------------------------------------|
-| Framework    | Next.js 16 (App Router, Turbopack)              |
-| Language     | TypeScript (strict)                             |
-| Styling      | Tailwind CSS v4 + shadcn/ui                     |
-| Database     | PostgreSQL via Supabase                         |
-| ORM          | Prisma 7 (driver adapter: `@prisma/adapter-pg`) |
-| Auth         | NextAuth v5 (Credentials + Microsoft Entra ID) |
-| Email        | Resend                                          |
-| Teams        | Adaptive Cards via Incoming Webhook             |
-| Charts       | Recharts                                        |
-| Deployment   | Vercel (Fluid Compute + Cron)                   |
+| Layer        | Technology                                          |
+|--------------|-----------------------------------------------------|
+| Framework    | Next.js 16 (App Router, Turbopack)                  |
+| Language     | TypeScript 5 (strict)                               |
+| Styling      | Tailwind CSS v4 + shadcn/ui v4 + Base UI            |
+| Database     | PostgreSQL 15 via Supabase                          |
+| ORM          | Prisma 7 (`@prisma/adapter-pg` — no binary engine)  |
+| Auth         | NextAuth v5 — Credentials + Microsoft Entra ID      |
+| Email        | Resend                                              |
+| Teams        | Adaptive Cards via Incoming Webhook                 |
+| Charts       | Recharts 3                                          |
+| Forms        | React Hook Form + Zod 4                             |
+| State        | TanStack Query v5 + Zustand                         |
+| Deployment   | Vercel (Fluid Compute + Cron)                       |
 
 ---
 
 ## Quick Setup
 
-### 1. Clone & install dependencies
+### 1. Install
 
 ```bash
-git clone <repo-url> atomquest
 cd atomquest
 npm install
 ```
 
-### 2. Configure environment variables
-
-Copy the template and fill in your values:
-
-```bash
-cp .env.local.example .env.local   # or edit .env.local directly
-```
-
-Required variables:
+### 2. Environment variables
 
 ```env
-# Supabase PostgreSQL — use the Transaction Pooler URL (port 6543)
+# Required
 DATABASE_URL="postgresql://postgres.[ref]:[pass]@aws-0-[region].pooler.supabase.com:6543/postgres"
-
-# NextAuth — generate with: openssl rand -base64 32
-AUTH_SECRET="your-secret-here"
+AUTH_SECRET="<openssl rand -base64 32>"
 NEXTAUTH_URL="http://localhost:3000"
-```
 
-Optional (leave blank to disable):
-
-```env
-# Microsoft Entra ID SSO
+# Optional — leave blank to disable the feature
 AUTH_MICROSOFT_ENTRA_ID_ID=""
 AUTH_MICROSOFT_ENTRA_ID_SECRET=""
 AUTH_MICROSOFT_ENTRA_ID_TENANT_ID=""
-
-# Email notifications via Resend
 RESEND_API_KEY=""
-
-# Microsoft Teams notifications
 TEAMS_WEBHOOK_URL=""
+CRON_SECRET=""        # bearer token for Vercel cron routes
 ```
 
-### 3. Set up the database
+### 3. Database
 
 ```bash
-# Push the Prisma schema to your Supabase project (creates all tables)
-npm run db:push
-
-# Seed demo users and an active goal cycle
-npm run db:seed
+npm run db:push    # push schema (no migration history)
+npm run db:seed    # seed demo accounts + active cycle
 ```
 
-### 4. Start the development server
+### 4. Dev server
 
 ```bash
-npm run dev
+npm run dev        # http://localhost:3000
 ```
-
-Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## Demo Accounts
 
-| Role     | Email               | Password     |
-|----------|---------------------|--------------|
-| Admin    | admin@demo.com      | Admin@123    |
-| Manager  | manager@demo.com    | Manager@123  |
-| Employee | emp@demo.com        | Emp@123      |
+| Role     | Email            | Password    |
+|----------|------------------|-------------|
+| Admin    | admin@demo.com   | Admin@123   |
+| Manager  | manager@demo.com | Manager@123 |
+| Employee | emp@demo.com     | Emp@123     |
 
 ---
 
-## Core Features
+## Feature Summary
 
-### Employee
-- Create goal sheets (max 8 goals, must total exactly 100% weightage)
-- Submit for manager approval
-- Log quarterly actuals (Q1–Q4) with auto-computed scores
-- View lock status and manager feedback
+**Employee** — create goal sheets (≤8 goals, total weightage = 100 %), submit for approval, log quarterly actuals, view computed scores and lock status.
 
-### Manager (L1)
-- Review and inline-edit submitted goal sheets
-- Approve (locks goals) or Return with note
-- Team dashboard with per-goal planned vs actual
-- Add structured check-in comments per quarter
+**Manager** — review/inline-edit submitted sheets, approve (locks goals) or return with note, add check-in comments per quarter, push shared KPIs.
 
-### Admin
-- Full user management (create, assign manager/department)
-- Goal cycle management (open/close dates per phase)
-- Push shared KPIs to multiple employees
-- Paginated audit trail for every mutation
-- Unlock individual goal sheets
-- Excel export of all goal data
-- Analytics dashboard (QoQ trends, completion heatmap, manager effectiveness)
+**Admin** — full user/cycle/department management, unlock sheets, audit trail, escalation rule config, analytics dashboard, Excel export.
+
+**Bonus features** — Azure AD SSO, email + Teams notifications, escalation module, analytics dashboard.
 
 ---
 
-## Useful Commands
+## Scoring Rules
+
+| UOM Type      | Formula                          | Cap |
+|---------------|----------------------------------|-----|
+| NUMERIC_MIN   | `actual / target`                | 1.5 |
+| NUMERIC_MAX   | `target / actual`                | 1.5 |
+| TIMELINE      | `1.0` if on-time, else `0.0`     | —   |
+| ZERO          | `1.0` if actual === 0, else `0.0`| —   |
+
+Score stored on every achievement save (`lib/score.ts`). Never recomputed on read.
+
+---
+
+## Commands
 
 ```bash
-npm run dev          # Start dev server (Turbopack)
-npm run build        # Production build (prisma generate + next build)
-npm run db:push      # Apply schema without migration history
-npm run db:migrate   # Create + apply named migration
-npm run db:seed      # Seed demo data
-npm run db:studio    # Open Prisma Studio GUI
-npx tsc --noEmit     # Type-check without building
+npm run dev           # Turbopack dev server
+npm run build         # prisma generate + next build
+npm run db:push       # push schema
+npm run db:migrate    # named migration
+npm run db:seed       # seed demo data
+npm run db:studio     # Prisma Studio GUI
+npx tsc --noEmit      # type-check
 ```
 
 ---
 
-## Deployment on Vercel
+## Deployment
 
-1. Push to GitHub, import the repo in Vercel
-2. Add all env vars under **Project → Settings → Environment Variables**
-3. `vercel.json` already configures the daily escalation cron at 08:00 UTC
+1. Push to GitHub → import in Vercel
+2. Add env vars under **Project → Settings → Environment Variables**
+3. `vercel.json` registers daily escalation cron:
 
 ```json
-{
-  "crons": [{ "path": "/api/cron/escalation", "schedule": "0 8 * * *" }]
-}
+{ "crons": [{ "path": "/api/cron/escalation", "schedule": "0 8 * * *" }] }
 ```
-
-Set `CRON_SECRET` in Vercel env vars — the cron route validates `Authorization: Bearer <CRON_SECRET>`.
 
 ---
 
-## Architecture Notes
+## Docs
 
-- **Server Components** handle all read-heavy pages (no client bundle for data fetching)
-- **API routes** handle all mutations + validate with Zod + write to `audit_logs`
-- **Prisma 7** uses `@prisma/adapter-pg` — no binary engine, runs cleanly on Vercel Fluid Compute
-- **`proxy.ts`** (not `middleware.ts`) — Next.js 16 renamed the file for route protection
-- Score is computed once on every achievement save: `NUMERIC_MIN`, `NUMERIC_MAX`, `TIMELINE`, `ZERO` (see `lib/score.ts`)
+- [High-Level Design (HLD)](docs/HLD.md)
+- [Low-Level Design (LLD)](docs/LLD.md)
+- [Database Schema](docs/DATABASE_SCHEMA.md)

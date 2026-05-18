@@ -183,3 +183,4 @@ export function SharedGoalClient({ employees, cycles }: Props) {
     </form>
   );
 }
+export default SharedGoalClient;

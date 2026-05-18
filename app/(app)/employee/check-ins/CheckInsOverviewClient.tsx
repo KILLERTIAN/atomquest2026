@@ -231,3 +231,5 @@ export function CheckInsOverviewClient({ isDemo }: { isDemo: boolean }) {
     </div>
   );
 }
+
+export default CheckInsOverviewClient;

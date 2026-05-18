@@ -6,7 +6,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis, ReferenceLine } from "rec
 import { Panel, PageHeader, Icon, Avatar } from "@/components/app/ui";
 import { BrandBarChart, BrandDonutChart, ChartLegend, PALETTE } from "@/components/charts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartLegend as ShadcnLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const qoqConfig: ChartConfig = {

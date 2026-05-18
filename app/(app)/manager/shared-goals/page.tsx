@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/app/ui";
-import { SharedGoalClient } from "./SharedGoalClient";
+import SharedGoalClient from "./SharedGoalClient";
 
 export default async function SharedGoalsPage() {
   const session = await auth();

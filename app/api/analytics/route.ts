@@ -22,8 +22,10 @@ export async function GET(req: Request) {
     const cycles = await db.goalCycle.findMany({ orderBy: { openDate: "desc" } });
     const data = await Promise.all(
       cycles.map(async (c) => {
-        const total = await db.goalSheet.count({ where: { cycleId: c.id } });
-        const approved = await db.goalSheet.count({ where: { cycleId: c.id, status: "APPROVED" } });
+        const [total, approved] = await Promise.all([
+          db.goalSheet.count({ where: { cycleId: c.id } }),
+          db.goalSheet.count({ where: { cycleId: c.id, status: "APPROVED" } }),
+        ]);
         const label = `FY ${c.year} · ${phaseLabel[c.phase] ?? c.phase}`;
         return { cycle: label, total, approved, rate: total ? ((approved / total) * 100).toFixed(1) : "0" };
       })

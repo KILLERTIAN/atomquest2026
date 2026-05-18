@@ -3,9 +3,8 @@ export const runtime = "nodejs";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
-import * as XLSX from "xlsx";
-
 export async function GET(req: Request) {
+  const XLSX = await import("xlsx");
   const session = await auth();
   if (!session || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

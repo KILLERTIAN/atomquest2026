@@ -28,19 +28,12 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { employeeIds, cycleId, ...goalData } = parsed.data;
-  const created = [];
 
-  for (const empId of employeeIds) {
-    let sheet = await db.goalSheet.findFirst({
-      where: { employeeId: empId, cycleId },
-    });
-
+  const created = await Promise.all(employeeIds.map(async (empId) => {
+    let sheet = await db.goalSheet.findFirst({ where: { employeeId: empId, cycleId } });
     if (!sheet) {
-      sheet = await db.goalSheet.create({
-        data: { employeeId: empId, cycleId },
-      });
+      sheet = await db.goalSheet.create({ data: { employeeId: empId, cycleId } });
     }
-
     const goal = await db.goal.create({
       data: {
         sheetId: sheet.id,
@@ -54,16 +47,9 @@ export async function POST(req: Request) {
         isShared: true,
       },
     });
-    created.push(goal);
-
-    await notify(
-      empId,
-      "shared_goal",
-      "New shared goal assigned",
-      `${goalData.thrustArea} · ${goalData.title}`,
-      "/employee/goals",
-    );
-  }
+    await notify(empId, "shared_goal", "New shared goal assigned", `${goalData.thrustArea} · ${goalData.title}`, "/employee/goals");
+    return goal;
+  }));
 
   await sendSharedGoalCard(
     session.user.name ?? "Manager",

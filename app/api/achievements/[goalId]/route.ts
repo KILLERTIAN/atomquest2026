@@ -58,16 +58,16 @@ export async function PUT(req: Request, ctx: { params: Promise<Record<string, st
     update: { actualValue, actualDate: actualDateObj, status, notes, computedScore: score },
   });
 
-  // Sync to shared copies
+  // Sync to shared copies in parallel
   if (!goal.primaryGoalId) {
     const copies = await db.goal.findMany({ where: { primaryGoalId: goalId }, select: { id: true } });
-    for (const copy of copies) {
-      await db.goalAchievement.upsert({
+    await Promise.all(copies.map((copy) =>
+      db.goalAchievement.upsert({
         where: { goalId_quarter: { goalId: copy.id, quarter } },
         create: { goalId: copy.id, quarter, actualValue, actualDate: actualDateObj, status, notes, computedScore: score },
         update: { actualValue, actualDate: actualDateObj, status, notes, computedScore: score },
-      });
-    }
+      })
+    ));
   }
 
   // Email employee when all goals in sheet are completed for this quarter

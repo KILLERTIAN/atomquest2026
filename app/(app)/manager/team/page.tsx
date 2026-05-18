@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PageHeader, Panel, Icon } from "@/components/app/ui";
 import { TeamInviteTools } from "./TeamInviteTools";
-import { TeamTableClient } from "./TeamTableClient";
+import TeamTableClient from "./TeamTableClient";
 
 type Member = {
   id: string; name: string; email: string;

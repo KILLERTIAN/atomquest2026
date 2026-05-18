@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Avatar, Icon, Panel } from "@/components/app/ui";
 import { useTheme } from "@/components/theme-provider";
 import { useSession } from "next-auth/react";
@@ -188,7 +189,7 @@ export function SettingsClient({ user }: Props) {
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "20px", flexWrap: "wrap" }}>
                   <div style={{ flexShrink: 0 }}>
                     {profileAvatar ? (
-                      <img src={profileAvatar} alt={initials} style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", boxShadow: "0 0 0 4px var(--brand-soft)" }} onError={() => setProfileAvatar("")} />
+                      <Image src={profileAvatar} alt={initials} width={72} height={72} style={{ borderRadius: "50%", objectFit: "cover", boxShadow: "0 0 0 4px var(--brand-soft)" }} onError={() => setProfileAvatar("")} />
                     ) : (
                       <div style={{ width: 72, height: 72, borderRadius: "50%", background: "var(--brand)", color: "var(--brand-fg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, boxShadow: "0 0 0 4px var(--brand-soft)" }}>
                         {initials}
@@ -482,3 +483,4 @@ export function SettingsClient({ user }: Props) {
     </>
   );
 }
+export default SettingsClient;
