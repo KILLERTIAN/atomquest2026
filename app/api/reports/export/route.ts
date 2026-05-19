@@ -28,6 +28,9 @@ export async function GET(req: Request) {
     for (const goal of sheet.goals) {
       for (const q of ["Q1", "Q2", "Q3", "Q4"] as const) {
         const ach = goal.achievements.find((a) => a.quarter === q);
+        if (!ach) continue;
+        const score = ach.computedScore;
+        const weightedScore = score != null ? score * (goal.weightage / 100) : null;
         rows.push({
           Employee: sheet.employee.name,
           Email: sheet.employee.email,
@@ -42,10 +45,11 @@ export async function GET(req: Request) {
           "Target Date": goal.targetDate?.toISOString().split("T")[0] ?? "",
           Weightage: goal.weightage,
           Quarter: q,
-          "Actual Value": ach?.actualValue ?? "",
-          "Actual Date": ach?.actualDate?.toISOString().split("T")[0] ?? "",
-          Status: ach?.status ?? "NOT_STARTED",
-          "Computed Score": ach?.computedScore != null ? `${(ach.computedScore * 100).toFixed(1)}%` : "",
+          "Actual Value": ach.actualValue ?? "",
+          "Actual Date": ach.actualDate?.toISOString().split("T")[0] ?? "",
+          Status: ach.status ?? "NOT_STARTED",
+          "Computed Score": score != null ? `${score.toFixed(3)}×` : "",
+          "Weighted Score": weightedScore != null ? `${weightedScore.toFixed(3)}×` : "",
         });
       }
     }

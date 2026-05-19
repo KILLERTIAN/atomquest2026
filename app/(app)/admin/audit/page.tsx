@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import Link from "next/link";
 import { PageHeader, Panel, Icon } from "@/components/app/ui";
 
 type AuditLog = {
@@ -136,7 +137,7 @@ export default async function AuditPage() {
         eyebrow="admin · audit"
         title="Audit trail."
         lede={`Every action logged · ${logs.length} entries${dangerCount > 0 ? ` · <strong style="color:oklch(0.44 0.18 22)">${dangerCount} high-risk</strong>` : ""}`}
-        actions={<button className="btn-secondary"><Icon name="download" size={14} /> Export CSV</button>}
+        actions={<Link href="/api/audit/export" className="btn-secondary"><Icon name="download" size={14} /> Export CSV</Link>}
       />
 
       {dangerCount > 0 && (

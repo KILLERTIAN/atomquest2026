@@ -65,10 +65,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       : []),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+      }
+      if (trigger === "update" && token.id) {
+        const fresh = await db.user.findUnique({
+          where: { id: token.id as string },
+          select: { name: true, role: true },
+        });
+        if (fresh) {
+          token.name = fresh.name;
+          token.role = fresh.role;
+        }
       }
       return token;
     },
@@ -76,6 +86,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
+        session.user.name = token.name as string;
       }
       return session;
     },

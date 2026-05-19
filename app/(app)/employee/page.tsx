@@ -108,9 +108,9 @@ export default async function EmployeeHome() {
   // Derive active check-in quarter from current month (Indian FY: Q1=Apr-Jun, Q2=Jul-Sep, Q3=Oct-Dec, Q4=Jan-Mar)
   const currentMonth = new Date().getMonth() + 1;
   const activeCheckinQuarter =
-    currentMonth >= 7 && currentMonth <= 9 ? "Q1" :
-    currentMonth >= 10 && currentMonth <= 12 ? "Q2" :
-    currentMonth >= 1 && currentMonth <= 3 ? "Q3" : "Q4";
+    currentMonth >= 4 && currentMonth <= 6 ? "Q1" :
+    currentMonth >= 7 && currentMonth <= 9 ? "Q2" :
+    currentMonth >= 10 && currentMonth <= 12 ? "Q3" : "Q4";
 
   const ctaHref =
     latest.status === "APPROVED" ? `/employee/check-ins/${activeCheckinQuarter}` : `/employee/goals/${latest.id}`;

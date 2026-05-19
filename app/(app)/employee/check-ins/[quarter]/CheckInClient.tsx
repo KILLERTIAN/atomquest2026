@@ -72,15 +72,12 @@ export function CheckInClient({ isDemo }: { isDemo: boolean }) {
         body: JSON.stringify({ ...data, quarter }),
       });
       if (res.ok) {
+        const saved = await res.json();
         toast.success("Achievement saved");
         setSheets((prev) => prev.map((sheet) => ({
           ...sheet,
           goals: sheet.goals.map((g) => g.id === goalId ? {
-            ...g, achievements: [{
-              id: Date.now().toString(), goalId, quarter, status: data.status,
-              actualValue: data.actualValue ?? null, actualDate: data.actualDate ?? null,
-              notes: data.notes ?? null, computedScore: null,
-            }],
+            ...g, achievements: [{ ...saved }],
           } : g),
         })));
       } else {

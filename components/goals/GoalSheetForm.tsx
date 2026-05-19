@@ -6,6 +6,9 @@ import { toast } from "sonner";
 import type { GoalCycle } from "@prisma/client";
 import { WeightBar } from "@/components/app/ui";
 
+let _keyCounter = 0;
+function genKey() { return `goal-${++_keyCounter}`; }
+
 const THRUST_AREAS = [
   "Revenue Growth", "Cost Optimisation", "Customer Satisfaction",
   "People Development", "Innovation", "Operational Excellence", "Safety & Compliance",
@@ -19,12 +22,14 @@ const UOM_LABELS: Record<string, string> = {
 };
 
 interface GoalFormState {
+  _key: string;
   id?: string; isShared?: boolean;
   thrustArea: string; title: string; description: string;
   uomType: string; targetValue: string; targetDate: string; weightage: string;
 }
 
 const empty = (): GoalFormState => ({
+  _key: genKey(),
   thrustArea: "", title: "", description: "", uomType: "NUMERIC_MIN",
   targetValue: "", targetDate: "", weightage: "",
 });
@@ -74,6 +79,7 @@ export function GoalSheetForm({ cycles, existingSheet }: Props) {
   const [cycleId, setCycleId] = useState(existingSheet?.cycleId ?? cycles[0]?.id ?? "");
   const [goals, setGoals] = useState<GoalFormState[]>(
     existingSheet?.goals?.map((g) => ({
+      _key: g.id ?? genKey(),
       id: g.id, isShared: g.isShared ?? false,
       thrustArea: g.thrustArea, title: g.title,
       description: g.description ?? "", uomType: g.uomType,
@@ -112,7 +118,12 @@ export function GoalSheetForm({ cycles, existingSheet }: Props) {
     const res = await fetch(url, { method: existingSheet ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     if (!res.ok) {
       const err = await res.json();
-      toast.error(err?.error?.formErrors?.[0] ?? "Failed to save");
+      const msg =
+        (typeof err?.error === "string" && err.error) ||
+        err?.error?.formErrors?.[0] ||
+        Object.values(err?.error?.fieldErrors ?? {}).flat()[0] ||
+        "Failed to save";
+      toast.error(msg as string);
       setSaving(false);
       return;
     }
@@ -165,7 +176,7 @@ export function GoalSheetForm({ cycles, existingSheet }: Props) {
 
       {/* Goal cards */}
       {goals.map((goal, i) => (
-        <div key={i} style={{ background: "#fff", border: "1px solid oklch(0.90 0.015 88)", borderRadius: "16px", overflow: "hidden" }}>
+        <div key={goal._key} style={{ background: "#fff", border: "1px solid oklch(0.90 0.015 88)", borderRadius: "16px", overflow: "hidden" }}>
 
           {/* Card header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 14px", borderBottom: "1px solid oklch(0.94 0.01 88)" }}>

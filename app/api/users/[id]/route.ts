@@ -82,6 +82,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<Record<string, 
     const target = await db.user.findUnique({ where: { id, managerId: session.user.id }, select: { managerId: true } });
     if (!target) return NextResponse.json({ error: "Not your direct report" }, { status: 403 });
 
+    if (parsed.data.managerId) {
+      const newManager = await db.user.findUnique({ where: { id: parsed.data.managerId }, select: { role: true } });
+      if (!newManager || (newManager.role !== "MANAGER" && newManager.role !== "ADMIN")) {
+        return NextResponse.json({ error: "Target user is not a manager" }, { status: 400 });
+      }
+    }
+
     const updated = await db.user.update({ where: { id }, data: { managerId: parsed.data.managerId }, select: { id: true, managerId: true, manager: { select: { name: true } } } });
     await logAudit("User", id, "MANAGER_TRANSFERRED", session.user.id, { managerId: target.managerId }, { managerId: parsed.data.managerId });
     await notify(id, "profile_updated", "Your manager has changed", `Manager → ${updated.manager?.name ?? "None"}`, "/employee");
@@ -110,7 +117,11 @@ export async function DELETE(_req: Request, ctx: { params: Promise<Record<string
   const sheets = await db.goalSheet.findMany({ where: { employeeId: id }, select: { id: true, goals: { select: { id: true } } } });
   const goalIds = sheets.flatMap((s) => s.goals.map((g) => g.id));
   // GoalAchievement has onDelete: Cascade on goalId — deleted with goals
-  if (goalIds.length > 0) await db.goal.deleteMany({ where: { id: { in: goalIds } } });
+  if (goalIds.length > 0) {
+    // Nullify primaryGoalId on shared copies before deleting primary goals
+    await db.goal.updateMany({ where: { primaryGoalId: { in: goalIds } }, data: { primaryGoalId: null } });
+    await db.goal.deleteMany({ where: { id: { in: goalIds } } });
+  }
   await db.goalSheet.deleteMany({ where: { employeeId: id } });
   await db.goalSheet.updateMany({ where: { approvedById: id }, data: { approvedById: null } });
   await db.checkinComment.deleteMany({ where: { managerId: id } });

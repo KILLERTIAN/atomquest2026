@@ -6,7 +6,6 @@ const resend = process.env.RESEND_API_KEY
   : null;
 
 const FROM = "AtomQuest <noreply@atomberg.garcade.in>";
-const TEST_TO = "omsharma050322@gmail.com";
 const APP_URL = getAppUrl();
 
 /* ── Base template ── */

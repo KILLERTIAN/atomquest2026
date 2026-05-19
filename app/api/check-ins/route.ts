@@ -19,6 +19,16 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+  if (session.user.role === "MANAGER") {
+    const sheet = await db.goalSheet.findUnique({
+      where: { id: parsed.data.goalSheetId },
+      include: { employee: { select: { managerId: true } } },
+    });
+    if (!sheet || sheet.employee.managerId !== session.user.id) {
+      return NextResponse.json({ error: "Not your direct report's sheet" }, { status: 403 });
+    }
+  }
+
   const comment = await db.checkinComment.create({
     data: {
       ...parsed.data,
@@ -36,6 +46,16 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const goalSheetId = searchParams.get("goalSheetId");
   const quarter = searchParams.get("quarter");
+
+  if (session.user.role === "MANAGER" && goalSheetId) {
+    const sheet = await db.goalSheet.findUnique({
+      where: { id: goalSheetId },
+      include: { employee: { select: { managerId: true } } },
+    });
+    if (!sheet || sheet.employee.managerId !== session.user.id) {
+      return NextResponse.json({ error: "Not your direct report's sheet" }, { status: 403 });
+    }
+  }
 
   const comments = await db.checkinComment.findMany({
     where: {

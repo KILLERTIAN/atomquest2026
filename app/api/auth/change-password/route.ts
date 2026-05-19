@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { passwordChangedEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -26,6 +27,7 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await bcrypt.hash(parsed.data.next, 12);
   await db.user.update({ where: { id: user.id }, data: { passwordHash } });
+  await logAudit("User", user.id, "PASSWORD_CHANGED", user.id);
 
   await passwordChangedEmail(user.email, user.name);
 

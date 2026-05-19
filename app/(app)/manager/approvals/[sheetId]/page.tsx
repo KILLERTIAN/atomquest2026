@@ -42,7 +42,7 @@ export default function ApprovalDetailPage() {
 
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [edits, setEdits] = useState<Record<string, { targetValue: string; weightage: string }>>({});
+  const [edits, setEdits] = useState<Record<string, { targetValue: string; weightage: string; targetDate: string }>>({});
   const [returnNote, setReturnNote] = useState("");
   const [acting, setActing] = useState(false);
 
@@ -54,7 +54,11 @@ export default function ApprovalDetailPage() {
         setSheet(data);
         const initial: typeof edits = {};
         data.goals?.forEach((g: Goal) => {
-          initial[g.id] = { targetValue: g.targetValue?.toString() ?? "", weightage: g.weightage.toString() };
+          initial[g.id] = {
+            targetValue: g.targetValue?.toString() ?? "",
+            weightage: g.weightage.toString(),
+            targetDate: g.targetDate ? new Date(g.targetDate).toISOString().split("T")[0] : "",
+          };
         });
         setEdits(initial);
       });
@@ -70,6 +74,7 @@ export default function ApprovalDetailPage() {
           id: g.id, thrustArea: g.thrustArea, title: g.title, uomType: g.uomType,
           weightage: parseFloat(edits[g.id]?.weightage ?? String(g.weightage)),
           targetValue: edits[g.id]?.targetValue ? parseFloat(edits[g.id].targetValue) : g.targetValue,
+          targetDate: edits[g.id]?.targetDate || g.targetDate || null,
         })),
       }),
     });
@@ -221,10 +226,21 @@ export default function ApprovalDetailPage() {
                           )}
                         </div>
                       )}
-                      {goal.targetDate && (
+                      {(goal.uomType === "TIMELINE" || goal.targetDate) && (
                         <div>
                           <div style={{ fontSize: "9px", color: "var(--ink-mute)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-jetbrains-mono)", marginBottom: "2px" }}>Deadline</div>
-                          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)" }}>{new Date(goal.targetDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</div>
+                          {isSubmitted && !goal.isShared ? (
+                            <input
+                              type="date"
+                              value={edits[goal.id]?.targetDate ?? ""}
+                              onChange={(e) => setEdits((p) => ({ ...p, [goal.id]: { ...p[goal.id], targetDate: e.target.value } }))}
+                              style={{ ...inputStyle, width: "150px", fontSize: "13px", fontWeight: 600, padding: "5px 9px" }}
+                            />
+                          ) : (
+                            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--ink)" }}>
+                              {goal.targetDate ? new Date(goal.targetDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { passwordChangedEmail } from "@/lib/email";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
     data: { passwordHash, resetToken: null, resetTokenExpiry: null },
   });
 
+  await logAudit("User", user.id, "PASSWORD_RESET", user.id);
   await passwordChangedEmail(user.email, user.name);
 
   return NextResponse.json({ ok: true });

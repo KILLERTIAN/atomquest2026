@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { sendSharedGoalCard } from "@/lib/teams";
 import { NextResponse } from "next/server";
@@ -29,8 +30,26 @@ export async function POST(req: Request) {
 
   const { employeeIds, cycleId, ...goalData } = parsed.data;
 
+  // Managers can only push to their own direct reports
+  if (session.user.role === "MANAGER") {
+    const directReports = await db.user.findMany({
+      where: { id: { in: employeeIds }, managerId: session.user.id },
+      select: { id: true },
+    });
+    const validIds = new Set(directReports.map((r) => r.id));
+    const invalid = employeeIds.filter((id) => !validIds.has(id));
+    if (invalid.length > 0) {
+      return NextResponse.json({ error: "Some employees are not your direct reports" }, { status: 403 });
+    }
+  }
+
+  let primaryGoalId: string | null = null;
+
   const created = await Promise.all(employeeIds.map(async (empId) => {
     let sheet = await db.goalSheet.findFirst({ where: { employeeId: empId, cycleId } });
+    if (sheet && (sheet.status === "APPROVED" || sheet.status === "SUBMITTED")) {
+      return null;
+    }
     if (!sheet) {
       sheet = await db.goalSheet.create({ data: { employeeId: empId, cycleId } });
     }
@@ -45,18 +64,24 @@ export async function POST(req: Request) {
         targetDate: goalData.targetDate ? new Date(goalData.targetDate) : null,
         weightage: goalData.weightage,
         isShared: true,
+        primaryGoalId: primaryGoalId,
       },
     });
+    if (!primaryGoalId) primaryGoalId = goal.id;
     await notify(empId, "shared_goal", "New shared goal assigned", `${goalData.thrustArea} · ${goalData.title}`, "/employee/goals");
     return goal;
   }));
+
+  const created_filtered = created.filter(Boolean);
 
   await sendSharedGoalCard(
     session.user.name ?? "Manager",
     goalData.title,
     goalData.thrustArea,
-    employeeIds.length,
+    created_filtered.length,
   );
 
-  return NextResponse.json(created, { status: 201 });
+  await logAudit("SharedGoal", created_filtered[0]?.id ?? "batch", "CREATED", session.user.id, {}, { employeeIds, title: goalData.title, count: created_filtered.length });
+
+  return NextResponse.json(created_filtered, { status: 201 });
 }

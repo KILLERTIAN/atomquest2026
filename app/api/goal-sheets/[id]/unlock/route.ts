@@ -20,6 +20,7 @@ export async function POST(_req: Request, ctx: { params: Promise<Record<string, 
   if (!sheet) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await db.goal.updateMany({ where: { sheetId: id }, data: { isLocked: false } });
+  await db.goalSheet.update({ where: { id }, data: { status: "DRAFT" } });
   await logAudit("GoalSheet", id, "UNLOCKED", session.user.id);
   await goalUnlockedEmail(sheet.employee.email, sheet.employee.name);
   await notify(sheet.employee.id, "unlock", "Goal sheet unlocked", "An admin unlocked your goals. You can now edit and resubmit.", `/employee/goals/${id}`);

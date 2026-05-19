@@ -8,7 +8,7 @@ async function post(card: object) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(card),
-  }).catch(() => {});
+  }).catch((err) => console.error("[Teams webhook error]", err));
 }
 
 function adaptiveCard(body: object[], actions: object[] = []) {

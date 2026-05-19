@@ -25,6 +25,12 @@ export async function POST(req: Request, ctx: { params: Promise<Record<string, s
     include: { employee: true },
   });
   if (!sheet) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (sheet.status !== "SUBMITTED") {
+    return NextResponse.json({ error: "Sheet is not in submitted state" }, { status: 409 });
+  }
+  if (session.user.role === "MANAGER" && sheet.employee.managerId !== session.user.id) {
+    return NextResponse.json({ error: "Not your direct report" }, { status: 403 });
+  }
 
   const updated = await db.goalSheet.update({
     where: { id },

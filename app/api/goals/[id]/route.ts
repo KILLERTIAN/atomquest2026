@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { GoalSheetSchema, GoalSheetDraftSchema } from "@/lib/validations";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -40,8 +41,8 @@ export async function PUT(req: Request, ctx: { params: Promise<Record<string, st
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (sheet.status === "APPROVED" && session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Sheet is locked" }, { status: 409 });
+  if ((sheet.status === "APPROVED" || sheet.status === "SUBMITTED") && session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: sheet.status === "APPROVED" ? "Sheet is locked" : "Sheet is awaiting review" }, { status: 409 });
   }
 
   const body = await req.json();
@@ -94,6 +95,8 @@ export async function PUT(req: Request, ctx: { params: Promise<Record<string, st
 
   // Ensure status is reset to DRAFT if it was RETURNED
   await db.goalSheet.update({ where: { id }, data: { status: "DRAFT" } });
+
+  await logAudit("GoalSheet", id, "UPDATED", session.user.id, { goalCount: sheet.goals.length }, { goalCount: goals.length });
 
   return NextResponse.json(updated);
 }

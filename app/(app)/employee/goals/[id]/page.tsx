@@ -158,7 +158,7 @@ export default async function GoalSheetPage({ params }: { params: Promise<{ id: 
                               {a?.actualValue != null ? a.actualValue : a?.actualDate ? new Date(a.actualDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : <span style={{ color: "var(--ink-mute)", fontWeight: 400, fontSize: "14px" }}>not logged</span>}
                             </div>
                             {sc != null && (
-                              <div style={{ fontSize: "11px", color: scoreColor, marginTop: "3px", fontFamily: "var(--font-jetbrains-mono)", fontWeight: 600 }}>{(sc * 100).toFixed(0)}%</div>
+                              <div style={{ fontSize: "11px", color: scoreColor, marginTop: "3px", fontFamily: "var(--font-jetbrains-mono)", fontWeight: 600 }}>{sc.toFixed(2)}×</div>
                             )}
                             {a && (
                               <div style={{ fontSize: "9px", color: "var(--ink-mute)", marginTop: "2px", textTransform: "uppercase", letterSpacing: "0.04em" }}>{a.status.replace("_", " ")}</div>

@@ -65,13 +65,38 @@ export default function ReportsPage() {
         title="Reports & export."
         lede="Download achievement data as Excel. Every goal, every person, all quarters in one sheet."
         actions={
-          <button className="btn-secondary"><Icon name="download" size={14} /> Bulk export</button>
+          <button className="btn-secondary" onClick={handleExport} disabled={downloading}><Icon name="download" size={14} /> Bulk export</button>
         }
       />
 
       <div className="stats-row">
         {EXPORT_PRESETS.map((preset, i) => (
-          <div key={i} className="stat-card" style={{ cursor: "pointer" }}>
+          <div key={i} className="stat-card" style={{ cursor: "pointer" }}
+            onClick={() => {
+              if (preset.title === "Manager effectiveness") {
+                (async () => {
+                  try {
+                    const res = await fetch("/api/analytics?type=managers");
+                    const d = await res.json();
+                    if (!d?.length) { toast.info("No manager data available yet."); return; }
+                    const XLSX = await import("xlsx");
+                    const ws = XLSX.utils.json_to_sheet(d);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Manager Effectiveness");
+                    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+                    const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a"); a.href = url; a.download = "manager-effectiveness.xlsx";
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    toast.success("Downloaded manager effectiveness report");
+                  } catch { toast.error("Failed to load manager data"); }
+                })();
+              } else {
+                handleExport();
+              }
+            }}
+          >
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
               <div className="sc-icon"><Icon name={preset.icon} size={16} /></div>
               {preset.tag && (

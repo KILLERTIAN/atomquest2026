@@ -20,33 +20,55 @@ export async function GET(req: Request) {
       Q4: "Q4 Check-in",
     };
     const cycles = await db.goalCycle.findMany({ orderBy: { openDate: "desc" } });
-    const data = await Promise.all(
-      cycles.map(async (c) => {
-        const [total, approved] = await Promise.all([
-          db.goalSheet.count({ where: { cycleId: c.id } }),
-          db.goalSheet.count({ where: { cycleId: c.id, status: "APPROVED" } }),
-        ]);
-        const label = `FY ${c.year} · ${phaseLabel[c.phase] ?? c.phase}`;
-        return { cycle: label, total, approved, rate: total ? ((approved / total) * 100).toFixed(1) : "0" };
-      })
-    );
+    const cycleIds = cycles.map((c) => c.id);
+
+    const [totalGroups, approvedGroups] = await Promise.all([
+      db.goalSheet.groupBy({ by: ["cycleId"], _count: { id: true }, where: { cycleId: { in: cycleIds } } }),
+      db.goalSheet.groupBy({ by: ["cycleId"], _count: { id: true }, where: { cycleId: { in: cycleIds }, status: "APPROVED" } }),
+    ]);
+
+    const totalMap = Object.fromEntries(totalGroups.map((g) => [g.cycleId, g._count.id]));
+    const approvedMap = Object.fromEntries(approvedGroups.map((g) => [g.cycleId, g._count.id]));
+
+    const data = cycles.map((c) => {
+      const total = totalMap[c.id] ?? 0;
+      const approved = approvedMap[c.id] ?? 0;
+      const label = `FY ${c.year} · ${phaseLabel[c.phase] ?? c.phase}`;
+      return { cycle: label, total, approved, rate: total ? ((approved / total) * 100).toFixed(1) : "0" };
+    });
     return NextResponse.json(data);
   }
 
   if (type === "qoq") {
+    const { searchParams } = new URL(req.url);
+    const yearParam = searchParams.get("year");
+    const year = yearParam ? parseInt(yearParam, 10) : new Date().getFullYear();
+
+    const activeCycles = await db.goalCycle.findMany({
+      where: { year },
+      select: { id: true, phase: true },
+    });
+    const cycleIds = activeCycles.map((c) => c.id);
+
+    const groups = await db.goalAchievement.groupBy({
+      by: ["quarter"],
+      where: {
+        computedScore: { not: null },
+        goal: { sheet: { cycleId: { in: cycleIds } } },
+      },
+      _avg: { computedScore: true },
+      _count: { id: true },
+    });
+
     const quarters = ["Q1", "Q2", "Q3", "Q4"] as const;
-    const data = await Promise.all(
-      quarters.map(async (q) => {
-        const achievements = await db.goalAchievement.findMany({
-          where: { quarter: q, computedScore: { not: null } },
-          select: { computedScore: true },
-        });
-        const avg = achievements.length
-          ? achievements.reduce((s, a) => s + (a.computedScore ?? 0), 0) / achievements.length
-          : 0;
-        return { quarter: q, avgScore: parseFloat(avg.toFixed(3)), count: achievements.length };
-      })
-    );
+    const data = quarters.map((q) => {
+      const g = groups.find((x) => x.quarter === q);
+      return {
+        quarter: q,
+        avgScore: g ? parseFloat((g._avg.computedScore ?? 0).toFixed(3)) : 0,
+        count: g?._count.id ?? 0,
+      };
+    });
     return NextResponse.json(data);
   }
 

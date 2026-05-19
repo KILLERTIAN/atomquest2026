@@ -125,7 +125,20 @@ export function SettingsClient({ user }: Props) {
   }, [searchParams]);
 
   const [showChangePw, setShowChangePw] = useState(false);
-  const [notif, setNotif] = useState({ email: true, teams: true, weekly: false, mentions: true });
+
+  const NOTIF_KEY = "atomquest:notifPrefs";
+  const NOTIF_DEFAULTS = { email: true, teams: true, weekly: false, mentions: true };
+  const [notif, setNotif] = useState<typeof NOTIF_DEFAULTS>(() => {
+    if (typeof window === "undefined") return NOTIF_DEFAULTS;
+    try { return { ...NOTIF_DEFAULTS, ...JSON.parse(localStorage.getItem(NOTIF_KEY) ?? "{}") }; } catch { return NOTIF_DEFAULTS; }
+  });
+
+  function toggleNotif(k: keyof typeof NOTIF_DEFAULTS) {
+    const next = { ...notif, [k]: !notif[k] };
+    setNotif(next);
+    try { localStorage.setItem(NOTIF_KEY, JSON.stringify(next)); } catch {}
+  }
+
   const { theme, setTheme } = useTheme();
 
   // Profile editing state
@@ -298,7 +311,7 @@ export function SettingsClient({ user }: Props) {
                     </div>
                     <button
                       className={"toggle" + (notif[a.k] ? " on" : "")}
-                      onClick={() => setNotif((s) => ({ ...s, [a.k]: !s[a.k] }))}
+                      onClick={() => toggleNotif(a.k)}
                     >
                       <span className="toggle-knob" />
                     </button>
@@ -341,7 +354,7 @@ export function SettingsClient({ user }: Props) {
                       2 sessions across 2 devices.
                     </div>
                   </div>
-                  <button className="btn-ghost" style={{ fontSize: 12, padding: "6px 12px", flexShrink: 0 }}>
+                  <button className="btn-ghost" style={{ fontSize: 12, padding: "6px 12px", flexShrink: 0 }} onClick={() => toast.info("Sign out of other sessions via your Microsoft Entra ID portal, or sign out here and sign back in.")}>
                     Manage
                   </button>
                 </label>

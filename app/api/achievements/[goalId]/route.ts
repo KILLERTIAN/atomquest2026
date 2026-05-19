@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { AchievementSchema } from "@/lib/validations";
 import { computeScore } from "@/lib/score";
 import { scorePublishedEmail } from "@/lib/email";
@@ -22,6 +23,12 @@ export async function PUT(req: Request, ctx: { params: Promise<Record<string, st
   if (!goal) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (goal.sheet.employee.id !== session.user.id && session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (goal.isShared && goal.primaryGoalId) {
+    return NextResponse.json({ error: "Log actuals on the primary goal owner's copy" }, { status: 403 });
+  }
+  if (goal.sheet.status !== "APPROVED" && session.user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Goal sheet must be approved before logging actuals" }, { status: 409 });
   }
 
   const body = await req.json();
@@ -98,6 +105,8 @@ export async function PUT(req: Request, ctx: { params: Promise<Record<string, st
       }
     }
   }
+
+  await logAudit("GoalAchievement", achievement.id, "UPSERTED", session.user.id, {}, { goalId, quarter, status, computedScore: score });
 
   return NextResponse.json(achievement);
 }
