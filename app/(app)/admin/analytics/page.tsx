@@ -62,8 +62,17 @@ export default function AnalyticsPage() {
   } | null>(null);
   const [managers, setManagers] = useState<typeof DEMO_MGRS | null>(null);
   const [completion, setCompletion] = useState<typeof DEMO_COMPLETION | null>(null);
+  const [employees, setEmployees] = useState<{
+    id: string; name: string; email: string; department: string;
+    sheetStatus: string; cycleLabel: string;
+    checkinStatus: Record<string, { done: number; total: number }>;
+    avgScore: number | null;
+  }[]>([]);
 
   useEffect(() => {
+    fetch("/api/analytics?type=employees").then((r) => r.json()).then((d) => {
+      if (Array.isArray(d)) setEmployees(d);
+    }).catch(() => {});
     fetch("/api/analytics?type=qoq").then((r) => r.json()).then((d) => {
       const mapped = (d as { quarter?: string; avgScore?: number; count?: number }[])
         .filter((x) => (x.count ?? 0) > 0)
@@ -216,6 +225,42 @@ export default function AnalyticsPage() {
           <BrandBarChart data={uomData} bars={[{ key: "count", label: "Goals" }]} height={200} />
         </Panel>
       </div>
+
+      {employees.length > 0 && (
+        <Panel title="Per-employee check-in status" sub="Quarter-by-quarter actuals logged · current cycle">
+          <div style={{ overflowX: "auto" }}>
+            <table className="audit-tbl">
+              <thead>
+                <tr><th>Employee</th><th>Department</th><th>Sheet</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Avg Score</th></tr>
+              </thead>
+              <tbody>
+                {employees.map((emp) => (
+                  <tr key={emp.id}>
+                    <td>
+                      <div style={{ fontWeight: 500, fontSize: "13.5px" }}>{emp.name}</div>
+                      <div className="font-mono text-xs" style={{ color: "var(--ink-mute)" }}>{emp.email}</div>
+                    </td>
+                    <td style={{ color: "var(--ink-mute)", fontSize: "12px" }}>{emp.department || "—"}</td>
+                    <td><span className={`pill st-${emp.sheetStatus.toLowerCase()}`} style={{ fontSize: "10px" }}>{emp.sheetStatus}</span></td>
+                    {(["Q1","Q2","Q3","Q4"] as const).map((q) => {
+                      const cs = emp.checkinStatus[q];
+                      const pct = cs?.total ? Math.round((cs.done / cs.total) * 100) : 0;
+                      return (
+                        <td key={q} className="font-mono text-xs" style={{ color: pct === 100 ? "var(--ok)" : pct > 0 ? "oklch(0.65 0.16 88)" : "var(--ink-mute)" }}>
+                          {cs?.total ? `${cs.done}/${cs.total}` : "—"}
+                        </td>
+                      );
+                    })}
+                    <td className="font-mono text-xs" style={{ color: emp.avgScore != null && emp.avgScore >= 1 ? "var(--ok)" : "var(--ink-mute)" }}>
+                      {emp.avgScore != null ? `${emp.avgScore.toFixed(2)}×` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      )}
 
       <Panel title="Manager check-in effectiveness" sub="% of reports checked in on time · target 100%">
         <div className="mgr-list">

@@ -147,6 +147,10 @@ export function SettingsClient({ user }: Props) {
   const [profileEditing, setProfileEditing] = useState(false);
   const [profileName, setProfileName] = useState(sUser?.name ?? user.name);
   const [profileAvatar, setProfileAvatar] = useState((sUser as { avatarUrl?: string })?.avatarUrl ?? "");
+
+  useEffect(() => {
+    if (!profileEditing && sUser?.name) setProfileName(sUser.name);
+  }, [sUser?.name, profileEditing]);
   const [profileSaving, setProfileSaving] = useState(false);
   const initials = (sUser?.name ?? user.name).split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 

@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logAudit } from "@/lib/audit";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -25,5 +26,6 @@ export async function PATCH(req: Request) {
     select: { id: true, name: true, avatarUrl: true },
   });
 
+  await logAudit("User", session.user.id, "PROFILE_UPDATED", session.user.id, {}, parsed.data);
   return NextResponse.json(updated);
 }

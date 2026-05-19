@@ -107,5 +107,57 @@ export async function GET(req: Request) {
     return NextResponse.json(data);
   }
 
+  if (type === "employees") {
+    const { searchParams } = new URL(req.url);
+    const cycleId = searchParams.get("cycleId");
+
+    const employees = await db.user.findMany({
+      where: { role: "EMPLOYEE" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        department: { select: { name: true } },
+        goalSheets: {
+          where: cycleId ? { cycleId } : {},
+          include: {
+            cycle: { select: { year: true, phase: true } },
+            goals: {
+              include: { achievements: { select: { quarter: true, status: true, computedScore: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    const data = employees.map((emp) => {
+      const quarters = ["Q1", "Q2", "Q3", "Q4"] as const;
+      const sheet = emp.goalSheets[0] ?? null;
+      const checkinStatus = quarters.reduce((acc, q) => {
+        const allAchs = sheet?.goals.flatMap((g) => g.achievements.filter((a) => a.quarter === q)) ?? [];
+        const done = allAchs.filter((a) => a.status !== "NOT_STARTED").length;
+        acc[q] = { done, total: sheet?.goals.length ?? 0 };
+        return acc;
+      }, {} as Record<string, { done: number; total: number }>);
+
+      const allAchs = sheet?.goals.flatMap((g) => g.achievements) ?? [];
+      const scored = allAchs.filter((a) => a.computedScore != null);
+      const avgScore = scored.length ? scored.reduce((s, a) => s + (a.computedScore ?? 0), 0) / scored.length : null;
+
+      return {
+        id: emp.id,
+        name: emp.name,
+        email: emp.email,
+        department: emp.department?.name ?? "",
+        sheetStatus: sheet?.status ?? "NONE",
+        cycleLabel: sheet ? `FY ${sheet.cycle.year} · ${sheet.cycle.phase}` : "—",
+        checkinStatus,
+        avgScore: avgScore != null ? parseFloat(avgScore.toFixed(3)) : null,
+      };
+    });
+
+    return NextResponse.json(data);
+  }
+
   return NextResponse.json({ error: "Invalid type" }, { status: 400 });
 }
