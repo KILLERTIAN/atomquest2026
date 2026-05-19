@@ -12,9 +12,8 @@ const Body = z.object({
   force: z.boolean().default(false),
 });
 
-const APP_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-
 export async function POST(req: Request) {
+  const APP_URL = new URL(req.url).origin;
   const session = await auth();
   if (!session || (session.user.role !== "MANAGER" && session.user.role !== "ADMIN")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

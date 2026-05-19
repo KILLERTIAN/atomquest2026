@@ -362,7 +362,7 @@ export function Sidebar({ role, user, collapsed, onToggle, isMobile = false }: P
 
             {/* Sign out */}
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
               style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", padding: "11px 16px", color: "oklch(0.72 0.14 32)", fontSize: "14px", background: "none", border: "none", cursor: "pointer", transition: "background 0.12s", textAlign: "left" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "oklch(0.22 0.05 30)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}

@@ -1,4 +1,5 @@
-const APP_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+import { getAppUrl } from "@/lib/app-url";
+const APP_URL = getAppUrl();
 
 async function post(card: object) {
   const webhookUrl = process.env.TEAMS_WEBHOOK_URL;
