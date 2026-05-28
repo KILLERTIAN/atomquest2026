@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Avatar, Icon, Panel } from "@/components/app/ui";
 import { useTheme } from "@/components/theme-provider";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { toast } from "sonner";
 import type { Role } from "@prisma/client";
 
@@ -100,6 +100,7 @@ interface Props {
     role: Role;
     department?: string | null;
     manager?: string | null;
+    isEntraConnected?: boolean;
   };
 }
 
@@ -334,10 +335,18 @@ export function SettingsClient({ user }: Props) {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 500, color: "var(--ink)" }}>Microsoft Entra ID</div>
                   <div style={{ fontSize: 12, color: "var(--ink-mute)", marginTop: 2 }}>
-                    Tenant: atomberg.onmicrosoft.com · last sign-in 2h ago
+                    {user.isEntraConnected 
+                      ? "Your account is linked to your Microsoft workspace." 
+                      : "Not connected. Sign in with Microsoft to link."}
                   </div>
                 </div>
-                <span className="pill st-approved">connected</span>
+                {user.isEntraConnected ? (
+                  <span className="pill st-approved">connected</span>
+                ) : (
+                  <button className="btn-secondary" style={{ fontSize: 12, padding: "5px 12px" }} onClick={() => signIn("microsoft-entra-id", { callbackUrl: "/settings?tab=sso" })}>
+                    Link account
+                  </button>
+                )}
               </div>
               <div className="auto-list" style={{ marginTop: 12 }}>
                 <label className="auto-row">

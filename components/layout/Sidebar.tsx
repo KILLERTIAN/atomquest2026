@@ -52,7 +52,7 @@ const sectionLabels: Record<Role, string> = {
 
 interface Props {
   role: Role;
-  user: { name: string; email: string; role: string };
+  user: { name: string; email: string; role: string; provider?: string; id_token?: string };
   collapsed: boolean;
   onToggle: () => void;
   isMobile?: boolean;
@@ -362,7 +362,16 @@ export function Sidebar({ role, user, collapsed, onToggle, isMobile = false }: P
 
             {/* Sign out */}
             <button
-              onClick={async () => { await signOut({ redirect: false }); window.location.href = "/login"; }}
+              onClick={async () => {
+                await signOut({ redirect: false });
+                if (user.provider === "microsoft-entra-id") {
+                  let url = `https://login.microsoftonline.com/common/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(window.location.origin + "/login")}`;
+                  if (user.id_token) url += `&id_token_hint=${user.id_token}`;
+                  window.location.href = url;
+                } else {
+                  window.location.href = "/login";
+                }
+              }}
               style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", padding: "11px 16px", color: "oklch(0.72 0.14 32)", fontSize: "14px", background: "none", border: "none", cursor: "pointer", transition: "background 0.12s", textAlign: "left" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "oklch(0.22 0.05 30)"; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}

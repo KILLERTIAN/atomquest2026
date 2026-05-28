@@ -12,6 +12,8 @@ declare module "next-auth" {
       email: string;
       name: string;
       role: Role;
+      provider?: string;
+      id_token?: string;
     };
   }
   interface User {
@@ -60,12 +62,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
             clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET!,
             issuer: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID}/v2.0`,
+            authorization: { params: { prompt: "select_account" } },
           }),
         ]
       : []),
   ],
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user, trigger, account }) {
+      if (account) {
+        token.provider = account.provider;
+        token.id_token = account.id_token;
+      }
       if (user) {
         token.id = user.id;
         token.role = user.role;
@@ -87,6 +94,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
         session.user.name = token.name as string;
+        session.user.provider = token.provider as string | undefined;
+        session.user.id_token = token.id_token as string | undefined;
       }
       return session;
     },

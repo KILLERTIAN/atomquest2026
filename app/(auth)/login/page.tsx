@@ -32,7 +32,6 @@ function LoginContent() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showEntraDialog, setShowEntraDialog] = useState(false);
 
   useEffect(() => {
     if (!inviteToken) return;
@@ -233,7 +232,7 @@ function LoginContent() {
               </div>
 
               {/* SSO */}
-              <button type="button" onClick={() => setShowEntraDialog(true)} className="w-full flex items-center justify-center gap-2.5 transition-all hover:-translate-y-px text-sm font-medium" style={{ padding: "10px", border: "1px solid oklch(0.82 0.020 85)", borderRadius: "12px", background: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+              <button type="button" onClick={() => signIn("microsoft-entra-id", { callbackUrl: "/" })} className="w-full flex items-center justify-center gap-2.5 transition-all hover:-translate-y-px text-sm font-medium" style={{ padding: "10px", border: "1px solid oklch(0.82 0.020 85)", borderRadius: "12px", background: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 21 21">
                   <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
                   <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
@@ -350,101 +349,6 @@ function LoginContent() {
         </div>
       </main>
 
-      {/* Microsoft Entra unavailable dialog */}
-      {showEntraDialog && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "oklch(0.10 0.015 72 / 0.55)", backdropFilter: "blur(6px)" }}
-          onClick={() => setShowEntraDialog(false)}
-        >
-          <div
-            className="relative w-full max-w-md rounded-2xl overflow-hidden"
-            style={{
-              background: "#fdfaf2",
-              boxShadow: "0 32px 64px -16px oklch(0.12 0.02 72 / 0.45), 0 0 0 1px oklch(0.88 0.015 88)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Top accent bar */}
-            <div style={{ height: "3px", background: "linear-gradient(90deg, oklch(0.72 0.180 75), oklch(0.86 0.175 88))" }} />
-
-            {/* Close */}
-            <button
-              onClick={() => setShowEntraDialog(false)}
-              className="absolute top-4 right-4 flex items-center justify-center w-7 h-7 rounded-full transition-colors"
-              style={{ background: "oklch(0.93 0.015 88)", border: "none", cursor: "pointer", color: "oklch(0.45 0.018 80)" }}
-            >
-              <X size={13} strokeWidth={2.5} />
-            </button>
-
-            <div style={{ padding: "32px 32px 28px" }}>
-              {/* Icon */}
-              <div className="flex items-center justify-center w-14 h-14 rounded-2xl mb-5" style={{ background: "oklch(0.96 0.06 92)", border: "1px solid oklch(0.88 0.10 88)" }}>
-                <Frown size={26} style={{ color: "oklch(0.62 0.16 75)" }} strokeWidth={1.5} />
-              </div>
-
-              {/* Title */}
-              <h3 className="font-serif m-0 mb-2" style={{ fontSize: "22px", lineHeight: "1.2", letterSpacing: "-0.015em", color: "oklch(0.18 0.018 75)" }}>
-                I really wanted this to work 😞
-              </h3>
-              <p className="text-[13.5px] leading-relaxed mb-5" style={{ color: "oklch(0.40 0.020 75)" }}>
-                Both integrations are coded. Just couldn&apos;t get them live. Here&apos;s why.
-              </p>
-
-              {/* Items */}
-              <div className="space-y-3 mb-6">
-                <div className="flex gap-3 p-3.5 rounded-xl" style={{ background: "oklch(0.972 0.018 92)", border: "1px solid oklch(0.90 0.015 88)" }}>
-                  <svg width="16" height="16" viewBox="0 0 21 21" className="shrink-0 mt-0.5">
-                    <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
-                    <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
-                    <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
-                    <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
-                  </svg>
-                  <div>
-                    <p className="text-[13px] font-medium m-0 mb-1" style={{ color: "oklch(0.22 0.018 75)" }}>Microsoft Entra ID SSO</p>
-                    <p className="text-[12px] leading-relaxed m-0" style={{ color: "oklch(0.48 0.018 80)" }}>
-                      Applied for Microsoft&apos;s free developer sandbox. Got rejected, no reason given. Azure subscription needs a credit card I don&apos;t have. The code works, just has nowhere to run. 😔
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 p-3.5 rounded-xl" style={{ background: "oklch(0.972 0.018 92)", border: "1px solid oklch(0.90 0.015 88)" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 mt-0.5">
-                    <path d="M20 6H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Z" fill="#5059C9" />
-                    <path d="M13 10H9v5h4v-5Z" fill="#7B83EB" />
-                    <path d="M9 10H6v5h3v-5Z" fill="#5059C9" />
-                  </svg>
-                  <div>
-                    <p className="text-[13px] font-medium m-0 mb-1" style={{ color: "oklch(0.22 0.018 75)" }}>Microsoft Teams Notifications</p>
-                    <p className="text-[12px] leading-relaxed m-0" style={{ color: "oklch(0.48 0.018 80)" }}>
-                      Webhooks need a real company Teams workspace. Personal accounts don&apos;t support it. I don&apos;t have company channel access, so couldn&apos;t test it. 😕
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer note */}
-              <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl" style={{ background: "oklch(0.97 0.06 92)", border: "1px dashed oklch(0.82 0.12 88)" }}>
-                <span style={{ fontSize: "14px", lineHeight: 1, marginTop: "1px" }}>🙏</span>
-                <p className="text-[11.5px] leading-relaxed m-0" style={{ color: "oklch(0.42 0.06 80)" }}>
-                  Rest of the app is fully working. Try the{" "}
-                  <strong style={{ color: "oklch(0.30 0.08 78)", fontWeight: 600 }}>demo accounts</strong>{" "}
-                  below, I promise it won&apos;t disappoint.
-                </p>
-              </div>
-
-              {/* Close CTA */}
-              <button
-                onClick={() => setShowEntraDialog(false)}
-                className="w-full mt-5 flex items-center justify-center gap-2 font-medium transition-all hover:-translate-y-px"
-                style={{ padding: "13px", background: "oklch(0.136 0.022 72)", color: "#fdfaf2", borderRadius: "12px", fontSize: "14px", border: "none", cursor: "pointer", fontFamily: "inherit", boxShadow: "0 10px 24px -10px oklch(0.2 0.02 80 / 0.4)" }}
-              >
-                Got it, show me the app
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

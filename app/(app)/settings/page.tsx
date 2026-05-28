@@ -15,6 +15,7 @@ export default async function SettingsPage() {
       role:     true,
       manager:  { select: { name: true } },
       department: { select: { name: true } },
+      azureId:  true,
     },
   });
 
@@ -28,6 +29,7 @@ export default async function SettingsPage() {
         role:       user.role,
         department: user.department?.name ?? null,
         manager:    user.manager?.name ?? null,
+        isEntraConnected: !!user.azureId,
       }}
     />
   );

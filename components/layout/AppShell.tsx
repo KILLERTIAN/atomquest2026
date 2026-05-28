@@ -7,7 +7,7 @@ import type { Role } from "@prisma/client";
 import { Menu, X } from "lucide-react";
 
 interface Props {
-  user: { name: string; email: string; role: Role };
+  user: { name: string; email: string; role: Role; provider?: string; id_token?: string };
   children: React.ReactNode;
 }
 
