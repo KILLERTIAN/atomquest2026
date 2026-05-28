@@ -13,7 +13,6 @@ declare module "next-auth" {
       name: string;
       role: Role;
       provider?: string;
-      id_token?: string;
     };
   }
   interface User {
@@ -71,7 +70,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, trigger, account }) {
       if (account) {
         token.provider = account.provider;
-        token.id_token = account.id_token;
       }
       if (user) {
         token.id = user.id;
@@ -95,7 +93,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as Role;
         session.user.name = token.name as string;
         session.user.provider = token.provider as string | undefined;
-        session.user.id_token = token.id_token as string | undefined;
       }
       return session;
     },
